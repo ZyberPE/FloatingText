@@ -6,13 +6,14 @@ use pocketmine\plugin\PluginBase;
 use pocketmine\player\Player;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
+use pocketmine\entity\Location;
 use pocketmine\world\Position;
 use pocketmine\utils\Config;
-use pocketmine\entity\Location;
+
 use pocketmine\entity\EntityFactory;
 use pocketmine\nbt\tag\CompoundTag;
 
-use FloatingText\entity\FloatingTextEntity;
+use pocketmine\entity\object\ArmorStand;
 
 class Main extends PluginBase{
 
@@ -25,23 +26,6 @@ class Main extends PluginBase{
 
         $this->saveDefaultConfig();
         $this->data = new Config($this->getDataFolder() . "config.yml", Config::YAML);
-
-        // REGISTER ENTITY
-        EntityFactory::getInstance()->register(
-            FloatingTextEntity::class,
-            function($world, CompoundTag $nbt) : FloatingTextEntity{
-                return new FloatingTextEntity(
-                    Location::fromObject(
-                        $nbt->getVector3("Pos"),
-                        $world,
-                        0,
-                        0
-                    ),
-                    $nbt
-                );
-            },
-            ["FloatingText"]
-        );
 
         $this->loadTexts();
     }
@@ -78,8 +62,13 @@ class Main extends PluginBase{
             0
         );
 
-        $entity = new FloatingTextEntity($loc);
+        $entity = new ArmorStand($loc);
+
+        $entity->setInvisible();
+        $entity->setNameTagAlwaysVisible();
+        $entity->setNameTagVisible();
         $entity->setNameTag($text);
+
         $entity->spawnToAll();
 
         $this->entities[$id] = $entity;
@@ -118,7 +107,6 @@ class Main extends PluginBase{
     public function onCommand(CommandSender $sender, Command $cmd, string $label, array $args): bool{
 
         if(!$sender instanceof Player){
-            $sender->sendMessage("Run in game.");
             return true;
         }
 
@@ -136,10 +124,10 @@ class Main extends PluginBase{
 
                 if(!isset($args[1])) return true;
 
-                $id=$args[1];
-                $text=implode(" ",array_slice($args,2));
+                $id = $args[1];
+                $text = implode(" ", array_slice($args,2));
 
-                $pos=$sender->getPosition();
+                $pos = $sender->getPosition();
 
                 $this->spawnText($id,$pos,$text);
                 $this->saveText($id,$pos,$text);
@@ -159,23 +147,23 @@ class Main extends PluginBase{
 
                 if(!isset($args[1])) return true;
 
-                $id=$args[1];
+                $id = $args[1];
 
                 if(!isset($this->entities[$id])){
                     $sender->sendMessage("§cText not found.");
                     return true;
                 }
 
-                $entity=$this->entities[$id];
-                $pos=$sender->getPosition();
+                $entity = $this->entities[$id];
+                $pos = $sender->getPosition();
 
                 $entity->teleport($pos);
 
-                $texts=$this->data->get("texts");
+                $texts = $this->data->get("texts");
 
-                $texts[$id]["x"]=$pos->getX();
-                $texts[$id]["y"]=$pos->getY();
-                $texts[$id]["z"]=$pos->getZ();
+                $texts[$id]["x"] = $pos->getX();
+                $texts[$id]["y"] = $pos->getY();
+                $texts[$id]["z"] = $pos->getZ();
 
                 $this->data->set("texts",$texts);
                 $this->data->save();
