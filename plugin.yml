@@ -1,5 +1,5 @@
 name: FloatingText
-version: 1.0.0
+version: 1.0.1
 main: FloatingText\Main
 api: 5.0.0
 author: ZyberPE
@@ -8,8 +8,8 @@ commands:
   ft:
     description: Floating text commands
     usage: /ft
-    permission: ft.command
+    permission: floatingtext.command
 
 permissions:
-  ft.command:
+  floatingtext.command:
     default: op
