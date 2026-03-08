@@ -9,9 +9,7 @@ use pocketmine\command\CommandSender;
 use pocketmine\world\Position;
 use pocketmine\utils\Config;
 use pocketmine\entity\Location;
-use pocketmine\entity\Entity;
-use pocketmine\nbt\tag\CompoundTag;
-use pocketmine\world\World;
+use FloatingText\entity\FloatingTextEntity;
 
 class Main extends PluginBase{
 
@@ -19,15 +17,17 @@ class Main extends PluginBase{
     private array $entities = [];
 
     public function onEnable(): void{
-        @mkdir($this->getDataFolder());
-        $this->saveDefaultConfig();
 
+        @mkdir($this->getDataFolder());
+
+        $this->saveDefaultConfig();
         $this->data = new Config($this->getDataFolder() . "config.yml", Config::YAML);
 
         $this->loadTexts();
     }
 
     private function loadTexts(): void{
+
         foreach($this->data->get("texts", []) as $id => $textData){
 
             $world = $this->getServer()->getWorldManager()->getWorldByName($textData["world"]);
@@ -49,22 +49,17 @@ class Main extends PluginBase{
         $text = str_replace("/n", "\n", $text);
         $text = str_replace("&", "§", $text);
 
-        $nbt = new CompoundTag();
-        $loc = new Location($pos->x, $pos->y, $pos->z, $pos->getWorld(), 0, 0);
+        $loc = new Location(
+            $pos->getX(),
+            $pos->getY(),
+            $pos->getZ(),
+            $pos->getWorld(),
+            0,
+            0
+        );
 
-        $entity = new class($loc, $nbt) extends Entity{
-            protected function getInitialSizeInfo(): \pocketmine\entity\EntitySizeInfo{
-                return new \pocketmine\entity\EntitySizeInfo(0.01, 0.01);
-            }
-
-            public function getName(): string{
-                return "FloatingText";
-            }
-        };
-
+        $entity = new FloatingTextEntity($loc);
         $entity->setNameTag($text);
-        $entity->setNameTagAlwaysVisible();
-        $entity->setNameTagVisible();
         $entity->spawnToAll();
 
         $this->entities[$id] = $entity;
@@ -73,10 +68,11 @@ class Main extends PluginBase{
     private function saveText(string $id, Position $pos, string $text): void{
 
         $data = $this->data->get("texts");
+
         $data[$id] = [
-            "x" => $pos->x,
-            "y" => $pos->y,
-            "z" => $pos->z,
+            "x" => $pos->getX(),
+            "y" => $pos->getY(),
+            "z" => $pos->getZ(),
             "world" => $pos->getWorld()->getFolderName(),
             "text" => $text
         ];
@@ -93,7 +89,10 @@ class Main extends PluginBase{
         }
 
         $data = $this->data->get("texts");
-        unset($data[$id]);
+
+        if(isset($data[$id])){
+            unset($data[$id]);
+        }
 
         $this->data->set("texts", $data);
         $this->data->save();
@@ -102,7 +101,7 @@ class Main extends PluginBase{
     public function onCommand(CommandSender $sender, Command $cmd, string $label, array $args): bool{
 
         if(!$sender instanceof Player){
-            $sender->sendMessage("Run in game");
+            $sender->sendMessage("Run this command in game.");
             return true;
         }
 
@@ -118,7 +117,10 @@ class Main extends PluginBase{
 
             case "create":
 
-                if(!isset($args[1])) return false;
+                if(!isset($args[1])){
+                    $sender->sendMessage("§cUsage: /ft create <id> <text>");
+                    return true;
+                }
 
                 $id = $args[1];
                 $text = implode(" ", array_slice($args, 2));
@@ -128,25 +130,31 @@ class Main extends PluginBase{
                 $this->spawnText($id, $pos, $text);
                 $this->saveText($id, $pos, $text);
 
-                $sender->sendMessage("§aFloating text created");
+                $sender->sendMessage("§aFloating text created.");
             break;
 
             case "remove":
 
-                if(!isset($args[1])) return false;
+                if(!isset($args[1])){
+                    $sender->sendMessage("§cUsage: /ft remove <id>");
+                    return true;
+                }
 
                 $this->removeText($args[1]);
-                $sender->sendMessage("§cFloating text removed");
+                $sender->sendMessage("§cFloating text removed.");
             break;
 
             case "move":
 
-                if(!isset($args[1])) return false;
+                if(!isset($args[1])){
+                    $sender->sendMessage("§cUsage: /ft move <id>");
+                    return true;
+                }
 
                 $id = $args[1];
 
                 if(!isset($this->entities[$id])){
-                    $sender->sendMessage("§cText not found");
+                    $sender->sendMessage("§cText not found.");
                     return true;
                 }
 
@@ -156,14 +164,14 @@ class Main extends PluginBase{
                 $entity->teleport($pos);
 
                 $texts = $this->data->get("texts");
-                $texts[$id]["x"] = $pos->x;
-                $texts[$id]["y"] = $pos->y;
-                $texts[$id]["z"] = $pos->z;
+                $texts[$id]["x"] = $pos->getX();
+                $texts[$id]["y"] = $pos->getY();
+                $texts[$id]["z"] = $pos->getZ();
 
                 $this->data->set("texts", $texts);
                 $this->data->save();
 
-                $sender->sendMessage("§aFloating text moved");
+                $sender->sendMessage("§aFloating text moved.");
             break;
 
             case "list":
