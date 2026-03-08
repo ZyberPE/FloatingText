@@ -30,8 +30,4 @@ class FloatingTextEntity extends Entity{
     public static function getNetworkTypeId(): string{
         return "floating_text";
     }
-
-    public function getName(): string{
-        return "FloatingText";
-    }
 }
